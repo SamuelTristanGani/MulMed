@@ -10,14 +10,16 @@ export const ANIMATIONS = {
     rightLower: 150,
   },
 
-  // Strike: base striking shape.
-  // The timeline/loop decides which hand is actually “going forward”.
+  // Strike (now a looping right-arm punch).
+  // These are the RIGHT-arm driven base angles.
+  // Left arm will remain near tremble/speaking base and bend subtly in response.
   strike: {
     leftUpper: 20,
-    leftLower: -90,
-    rightUpper: -70,
-    rightLower: -30,
+    leftLower: -20,
+    rightUpper: -85,
+    rightLower: -140,
   },
+
 
   // Tremble: base tremble shape.
   tremble: {
@@ -37,25 +39,21 @@ export const ANIMATIONS = {
 };
 
 const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (t) => t * t * (3 - 2 * t); // assumes t in [0,1]
 
 /**
  * Looping macro driver.
  * Returns the rig pose for the given elapsed time.
- * all animations are sorted in this elapsed time
- *
- * Timeline feel (tweak values to taste):
- * - 0..1300ms: bow (with sway)
- * - 1300..2900ms: tremble (with jitter)
- * - 2900..4300ms: speak (with wave)
- * - 4300..end: strike (alternating hand forward strikes)
  */
-
 export function buildRigPoseAtTime(elapsedMs) {
-  const STRIKE_CYCLE_MS = 1200; // alternates striking side every 1.2s
-  const STRIKE_PUNCH_MS = 320; // portion of cycle used for forward “punch” motion
+  // Strike/timeline is no longer an alternating “strike side” animation.
+  // The full macro loop now cycles through bow/tremble/speak and ends on “strike”
+  // which is the looping right-arm punch.
+  const STRIKE_CYCLE_MS = 1200;
 
   const macroCycleMs = 5200;
   const macroPhase = elapsedMs % macroCycleMs;
+
 
   // Which designed gesture is active for this macro phase
   let poseId;
@@ -64,20 +62,18 @@ export function buildRigPoseAtTime(elapsedMs) {
   else if (macroPhase < 4300) poseId = "speak";
   else poseId = "strike";
 
-  // Base angles for each gesture
   const baseBow = ANIMATIONS.bow;
   const baseTremble = ANIMATIONS.tremble;
   const baseSpeak = ANIMATIONS.speak;
   const baseStrike = ANIMATIONS.strike;
 
-  // Alternating strike side
-  const rightIsStriking = Math.floor(elapsedMs / STRIKE_CYCLE_MS) % 2 === 0;
-
-  // Build the target pose with layered idle motion
+  // Fixed punch: drive ONLY the RIGHT arm in a loop.
+  // Left arm bends subtly in response.
   let target = { ...baseBow };
 
+
+
   if (poseId === "bow") {
-    // Natural sway to make bow feel alive
     const sway = Math.sin(elapsedMs / 900) * 4;
     target = {
       ...baseBow,
@@ -87,7 +83,6 @@ export function buildRigPoseAtTime(elapsedMs) {
       rightLower: baseBow.rightLower - sway * 0.5,
     };
   } else if (poseId === "tremble") {
-    // Tremble jitter
     const wob = Math.sin(elapsedMs / 180) * 2;
     target = {
       ...baseTremble,
@@ -97,7 +92,6 @@ export function buildRigPoseAtTime(elapsedMs) {
       rightLower: baseTremble.rightLower + wob,
     };
   } else if (poseId === "speak") {
-    // Speak wave
     const wave = Math.sin(elapsedMs / 650) * 3;
     target = {
       ...baseSpeak,
@@ -107,48 +101,49 @@ export function buildRigPoseAtTime(elapsedMs) {
       rightLower: baseSpeak.rightLower - wave * 0.6,
     };
   } else {
-    // Strike phase: alternate which side goes forward.
+    // Strike phase: fixed looping RIGHT-arm punch.
+    const FORWARD_MS = 220;
+    const REST_MS = STRIKE_CYCLE_MS;
+
     const phaseInStrike = elapsedMs % STRIKE_CYCLE_MS;
-    const punchT = Math.min(1, Math.max(0, phaseInStrike / STRIKE_PUNCH_MS));
-    const eased = punchT * punchT * (3 - 2 * punchT);
 
-    // Idle pose for the non-striking hand
-    const idle = {
-      ...baseTremble,
-      leftUpper: baseTremble.leftUpper + Math.sin(elapsedMs / 140) * 2,
-      leftLower: baseTremble.leftLower + Math.sin(elapsedMs / 160) * 1.5,
-      rightUpper: baseTremble.rightUpper - Math.sin(elapsedMs / 140) * 2,
-      rightLower: baseTremble.rightLower - Math.sin(elapsedMs / 160) * 1.5,
+    const forwardT = Math.min(1, Math.max(0, phaseInStrike / FORWARD_MS));
+    const forwardEased = smoothstep(forwardT);
+
+    const retractDen = REST_MS - FORWARD_MS;
+    const retractT =
+      retractDen <= 0
+        ? 1
+        : Math.min(1, Math.max(0, (phaseInStrike - FORWARD_MS) / retractDen));
+    const retractEased = smoothstep(retractT);
+
+    // amplitude: 0->1 during forward, 1->0 during retract
+    const amp = forwardEased * (1 - retractEased);
+
+    // Left-arm response (subtle counter-bend)
+    // When right punches forward, left upper tilts down slightly and left lower bends.
+    const leftUpperBend = Math.sin(amp * Math.PI) * -6; // ~[-6..0]
+    const leftLowerBend = Math.sin(amp * Math.PI) * -10; // ~[-10..0]
+
+    // Right-arm punch: approach baseStrike, then relax smoothly.
+    const rightUpper = lerp(baseBow.rightUpper, baseStrike.rightUpper, amp);
+    const rightLower = lerp(baseBow.rightLower, baseStrike.rightLower, amp);
+
+    target = {
+      ...baseBow,
+      leftUpper: baseBow.leftUpper + leftUpperBend,
+      leftLower: baseBow.leftLower + leftLowerBend,
+      rightUpper,
+      rightLower,
     };
-
-    if (rightIsStriking) {
-      // Right goes forward, left stays closer to bow+idle
-      target = {
-        ...baseBow,
-        leftUpper: lerp(baseBow.leftUpper, idle.leftUpper, 0.6),
-        leftLower: lerp(baseBow.leftLower, idle.leftLower, 0.6),
-        rightUpper: lerp(baseBow.rightUpper, baseStrike.rightUpper, eased),
-        rightLower: lerp(baseBow.rightLower, baseStrike.rightLower, eased),
-      };
-    } else {
-      // Left goes forward
-      target = {
-        ...baseBow,
-        leftUpper: lerp(baseBow.leftUpper, baseStrike.leftUpper, eased),
-        leftLower: lerp(baseBow.leftLower, baseStrike.leftLower, eased),
-        rightUpper: lerp(baseBow.rightUpper, idle.rightUpper, 0.6),
-        rightLower: lerp(baseBow.rightLower, idle.rightLower, 0.6),
-      };
-    }
   }
+
 
   return { poseId, pose: target };
 }
 
 /**
  * Single gesture loop driver (for debugging).
- *
- * - If gestureId is bow/tremble/speak: it loops only that gesture’s idle motion.
  * - If gestureId is strike: it loops strike and alternates hands going forward.
  */
 export function buildRigPoseForGestureAtTime(gestureId, elapsedMs) {
@@ -204,46 +199,42 @@ export function buildRigPoseForGestureAtTime(gestureId, elapsedMs) {
   }
 
   // gestureId === "strike"
+  // Looping RIGHT-arm punch + subtle left-arm response.
   const STRIKE_CYCLE_MS = 1200;
-  const STRIKE_PUNCH_MS = 320;
-
-  const rightIsStriking = Math.floor(elapsedMs / STRIKE_CYCLE_MS) % 2 === 0;
+  const FORWARD_MS = 220;
 
   const phaseInStrike = elapsedMs % STRIKE_CYCLE_MS;
-  const punchT = Math.min(1, Math.max(0, phaseInStrike / STRIKE_PUNCH_MS));
-  const eased = punchT * punchT * (3 - 2 * punchT);
 
-  // Idle pose for the non-striking hand
-  const idle = {
-    ...baseTremble,
-    leftUpper: baseTremble.leftUpper + Math.sin(elapsedMs / 140) * 2,
-    leftLower: baseTremble.leftLower + Math.sin(elapsedMs / 160) * 1.5,
-    rightUpper: baseTremble.rightUpper - Math.sin(elapsedMs / 140) * 2,
-    rightLower: baseTremble.rightLower - Math.sin(elapsedMs / 160) * 1.5,
-  };
+  const forwardT = Math.min(1, Math.max(0, phaseInStrike / FORWARD_MS));
+  const forwardEased = smoothstep(forwardT);
 
-  if (rightIsStriking) {
-    return {
-      poseId: "strike",
-      pose: {
-        ...baseBow,
-        leftUpper: lerp(baseBow.leftUpper, idle.leftUpper, 0.6),
-        leftLower: lerp(baseBow.leftLower, idle.leftLower, 0.6),
-        rightUpper: lerp(baseBow.rightUpper, baseStrike.rightUpper, eased),
-        rightLower: lerp(baseBow.rightLower, baseStrike.rightLower, eased),
-      },
-    };
-  }
+  const retractT =
+    phaseInStrike <= FORWARD_MS
+      ? 0
+      : Math.min(1, Math.max(0, (phaseInStrike - FORWARD_MS) / (STRIKE_CYCLE_MS - FORWARD_MS)));
+  const retractEased = smoothstep(retractT);
+
+  const amp = forwardEased * (1 - retractEased);
+
+  // Left-arm response (subtle counter-bend)
+  const leftUpperBend = Math.sin(amp * Math.PI) * -6; // ~[-6..0]
+  const leftLowerBend = Math.sin(amp * Math.PI) * -10; // ~[-10..0]
+
+  // Right-arm punch
+  const rightUpper = lerp(baseBow.rightUpper, baseStrike.rightUpper, amp);
+  const rightLower = lerp(baseBow.rightLower, baseStrike.rightLower, amp);
 
   return {
     poseId: "strike",
     pose: {
       ...baseBow,
-      leftUpper: lerp(baseBow.leftUpper, baseStrike.leftUpper, eased),
-      leftLower: lerp(baseBow.leftLower, baseStrike.leftLower, eased),
-      rightUpper: lerp(baseBow.rightUpper, idle.rightUpper, 0.6),
-      rightLower: lerp(baseBow.rightLower, idle.rightLower, 0.6),
+      leftUpper: baseBow.leftUpper + leftUpperBend,
+      leftLower: baseBow.leftLower + leftLowerBend,
+      rightUpper,
+      rightLower,
     },
-  };
+  }; 
+
+
 }
 

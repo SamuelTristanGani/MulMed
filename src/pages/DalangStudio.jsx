@@ -6,6 +6,44 @@ import { studioMoods, studioScenes } from "../data/studioScenes";
 import { useAudio } from "../audio/AudioContext";
 import "./DalangStudio.css";
 
+import WayangRig from "../components/WayangRig";
+import { ANIMATIONS, buildRigPoseForGestureAtTime } from "../components/WayangAnimations";
+
+function HanomanRigSlot({ gesture }) {
+  const [rot, setRot] = useState(() => ANIMATIONS.tremble);
+
+  useEffect(() => {
+    let rafId;
+    const start = performance.now();
+
+    const tick = (now) => {
+      const elapsed = now - start;
+      const gestureId = gesture && gesture !== "still" ? gesture : "tremble";
+      const { pose } = buildRigPoseForGestureAtTime(gestureId, elapsed);
+      setRot(pose);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [gesture]);
+
+  return (
+    <div
+      className="hanoman-rig-viewport"
+      style={{ width: "100%", height: "100%", position: "relative" }}
+    >
+      <WayangRig
+        leftUpperRotation={rot.leftUpper}
+        leftLowerRotation={rot.leftLower}
+        rightUpperRotation={rot.rightUpper}
+        rightLowerRotation={rot.rightLower}
+      />
+    </div>
+  );
+}
+
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const gestureOptions = [
   { id: "bow", label: "Bow", meaning: "Respect and restraint" },
@@ -607,10 +645,12 @@ export default function DalangStudio() {
                 const isFocused = currentStep?.focus === id;
                 const hasImage = characterImages[id] && !failedImages[id];
 
+                const gesture = gestures[id] || "still";
+
                 return (
                   <button
                     key={id}
-                    className={`stage-puppet ${isSelected ? "selected" : ""} ${isFocused ? "focused" : ""} ${position.flip ? "flip" : ""} gesture-${gestures[id] || "still"}`}
+                    className={`stage-puppet ${isSelected ? "selected" : ""} ${isFocused ? "focused" : ""} ${position.flip ? "flip" : ""} gesture-${gesture}`}
                     style={{
                       left: `${position.x}%`,
                       bottom: `${position.y}%`,
@@ -622,16 +662,20 @@ export default function DalangStudio() {
                   >
                     <span className="puppet-frame">
                       {hasImage ? (
-                        <img
-                          src={characterImages[id]}
-                          alt={character.name}
-                          draggable="false"
-                          loading="lazy"
-                          decoding="async"
-                          onError={() =>
-                            setFailedImages((prev) => ({ ...prev, [id]: true }))
-                          }
-                        />
+                        id === "hanoman" ? (
+                          <HanomanRigSlot gesture={gesture} />
+                        ) : (
+                          <img
+                            src={characterImages[id]}
+                            alt={character.name}
+                            draggable="false"
+                            loading="lazy"
+                            decoding="async"
+                            onError={() =>
+                              setFailedImages((prev) => ({ ...prev, [id]: true }))
+                            }
+                          />
+                        )
                       ) : (
                         <span className="puppet-fallback">{character.name}</span>
                       )}

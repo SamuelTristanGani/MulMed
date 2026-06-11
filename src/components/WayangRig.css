@@ -1,80 +1,111 @@
-/* to fine tune body part positioning for each wayang */
-
 /*
 
-.left-upper {
-    transform-origin: top center;
-}
+  Hanoman rig alignment & pivoting
 
-.left-lower {
-    transform-origin: top center;
-}
+  How to use:
+  - Edit the wrapper positions in Pass A so joints overlap at rotation=0.
+  - Edit the wrapper transform-origin in Pass B so the arm rotates around the joint pixel.
 
-.right-upper {
-    transform-origin: top center;
-}
-
-.right-lower {
-    transform-origin: top center;
-}
-
+  Files:
+  - Position + hinge tuning: this file
+  - Rotations: WayangRig.jsx
 */
 
-.body {
-  width: 100px;
-  height: 150px;
-  background: blue;
-
+.wayang-body {
   position: relative;
-  margin: 0 auto;
-  transform: translateY(40px);
+  /* Make the rig fill whatever frame it’s rendered inside.
+     RigTest/DalangStudio should control the size via the parent container. */
+  width: 100%;
+  height: 100%;
+
 }
 
-.left-upper {
-  width: 20px;
-  height: 80px;
-  background: red;
+.wayang-body img {
+  display: block;
+}
 
+/* Ensure the composed rig parts scale with the rig frame. */
+.wayang-body > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+
+.left-upper,
+.left-lower,
+.right-upper,
+.right-lower {
   position: absolute;
-  left: -10px;
-  top: 20px;
+  /* Default hinge at top-center of the wrapper image; adjust in Pass B */
+   /*outline: 1px dashed red; */
+}
 
-  transform-origin: top center;
+/*
+  Important: keep limb images at their intrinsic aspect instead of forcing them
+  to fill the wrapper box. For rotated “hinge wrappers”, forcing arms to
+  width/height:100% inside the wrapper can make them appear oversized and
+  visually detached.
+*/
+.left-upper img,
+.left-lower img,
+.right-upper img,
+.right-lower img {
+  display: block;
+  /* Scale limbs with the rig/body frame.
+     Using max-* clamps can make different limbs look different sizes
+     because each limb lives in a different absolute-positioned wrapper. */
+  object-fit: contain;
+  height: auto;
+}
+
+.left-upper img {
+  width: 18px;
+}
+
+.left-lower img {
+  width: 28px;
+}
+
+.right-upper img {
+  width: 19px;
+}
+
+.right-lower img {
+  width: 30px;
+}
+
+
+
+
+/* =====================
+   Pass A: wrapper position anchors
+   Edit offsets until joints align at rotation=0.
+   ===================== */
+
+.left-upper {
+  right: 72%;
+  top: 30%;
+  transform-origin: 55% 5%;
 }
 
 .left-lower {
-  width: 20px;
-  height: 60px;
-  background: green;
-
-  position: absolute;
-  left: 0;
-  top: 80px;
-
-  transform-origin: top center;
+  left: 8%;
+  top: 90%;
+  transform-origin: 20% 3%;
 }
 
 .right-upper {
-  width: 20px;
-  height: 80px;
-  background: red;
-
-  position: absolute;
-  right: -10px;
-  top: 20px;
-
-  transform-origin: top center;
+  left: 67%;
+  top: 31%;
+  transform-origin: 40% 5%;
 }
 
 .right-lower {
-  width: 20px;
-  height: 60px;
-  background: green;
-
-  position: absolute;
-  right: 0;
-  top: 80px;
-
-  transform-origin: top center;
+  left: 35%;
+  top: 90%;
+  transform-origin: 15% 5%;
 }
+
 

@@ -459,7 +459,7 @@
 .stage-puppet {
   position: absolute;
   z-index: 5;
-  width: 128px;
+  width: 168px;
   padding: 0;
   background: transparent;
   color: var(--text);
@@ -512,9 +512,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
+  height: 168px;
+  width: 128px;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 10px;
   background: rgba(20, 20, 20, 0.2);
@@ -559,11 +559,14 @@
 
 .shadow-mode .puppet-frame {
   overflow: visible;
-  border-color: transparent;
-  background: transparent;
+  /* keep visible border in shadow mode for hanoman rig */
+  border-color: rgba(201, 164, 86, 0.35);
+  background: rgba(0, 0, 0, 0);
   backdrop-filter: none;
   box-shadow: none;
 }
+
+
 
 .shadow-mode .puppet-frame img {
   filter: grayscale(1) contrast(1.28) brightness(0.13) drop-shadow(18px 8px 9px rgba(0, 0, 0, 0.22));
@@ -1399,7 +1402,7 @@
   }
 
   .puppet-frame {
-    height: 150px;
+    height: 168px;
   }
 }
 

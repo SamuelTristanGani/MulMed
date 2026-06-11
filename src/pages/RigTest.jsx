@@ -6,6 +6,8 @@ import {
   buildRigPoseForGestureAtTime,
 } from "../components/WayangAnimations";
 
+import WayangRig from "../components/WayangRig";
+
 // initialize RigTest
 export default function RigTest() {
   const gestureIds = useMemo(() => Object.keys(ANIMATIONS), []);
@@ -16,7 +18,11 @@ export default function RigTest() {
   // Choose which designed gesture to debug.
   // - When locked, it loops that gesture’s idle/loop animation.
   // - Set to null to autoplay the full macro timeline.
-  const POSE_DEBUG = "strike"; // "bow" | "strike" | "tremble" | "speak" | null
+  // For alignment debugging:
+  // - set POSE_DEBUG to "strike" etc to reproduce detachment
+  // - set to null to see the full macro timeline
+  // - if you suspect neutral detachment, temporarily force pose angles to 0 by setting POSE_DEBUG and overriding rotations in the component.
+  const POSE_DEBUG = "tremble"; // "bow" | "strike" | "tremble" | "speak" | null
 
   const isLocked = Boolean(POSE_DEBUG && gestureIds.includes(POSE_DEBUG));
 
@@ -53,41 +59,31 @@ export default function RigTest() {
   return (
     <div className="body">
       <div
-        className="left-upper"
-        style={{ transform: `rotate(${rot.leftUpper}deg)` }}
-        aria-label="left upper arm"
+        className="rig-viewport"
+        aria-label="WayangRig debug viewport"
+        style={{ position: "relative", width: 128, height: 150, margin: "auto"}}
       >
-        <div
-          className="left-lower"
-          style={{ transform: `rotate(${rot.leftLower}deg)` }}
-          aria-label="left lower arm"
+        <WayangRig
+          leftUpperRotation={rot.leftUpper}
+          leftLowerRotation={rot.leftLower}
+          rightUpperRotation={rot.rightUpper}
+          rightLowerRotation={rot.rightLower}
         />
-      </div>
 
-      <div
-        className="right-upper"
-        style={{ transform: `rotate(${rot.rightUpper}deg)` }}
-        aria-label="right upper arm"
-      >
         <div
-          className="right-lower"
-          style={{ transform: `rotate(${rot.rightLower}deg)` }}
-          aria-label="right lower arm"
-        />
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: -24,
-          fontSize: 14,
-          color: "#000",
-          fontWeight: 600,
-        }}
-      >
-        {isLocked ? `DEBUG: ${poseId}` : `TIMELINE: ${poseId}`}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: -24,
+            fontSize: 14,
+            color: "#000",
+            fontWeight: 600,
+            textAlign: "center",
+          }}
+        >
+          {isLocked ? `DEBUG: ${poseId}` : `TIMELINE: ${poseId}`}
+        </div>
       </div>
     </div>
   );

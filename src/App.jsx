@@ -12,13 +12,12 @@ import AudioSystem from "./audio/AudioSystem";
 import AudioToggle from "./audio/AudioToggle";
 
 // temp
-import RigTest from "./pages/RigTest.jsx";
+// import RigTest from "./pages/RigTest.jsx";
 
 function App() {
 
-  /*
+  
   return (
-    
     <BrowserRouter>
       <AudioSystem>
         <PageEffects />
@@ -36,12 +35,14 @@ function App() {
       </AudioSystem>
     </BrowserRouter>
   );
-  */
+  
 
   // hide after testing
+  /*
   return (
     <RigTest />
   );
+  */
 }
 
 export default App;
