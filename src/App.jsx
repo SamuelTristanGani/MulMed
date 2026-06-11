@@ -10,10 +10,15 @@ import SymbolismExplorer from "./pages/SymbolismExplorer";
 import PageEffects from "./components/PageEffects";
 import AudioSystem from "./audio/AudioSystem";
 import AudioToggle from "./audio/AudioToggle";
-import "./styles/global.css";
+
+// temp
+import RigTest from "./pages/RigTest.jsx";
 
 function App() {
+
+  /*
   return (
+    
     <BrowserRouter>
       <AudioSystem>
         <PageEffects />
@@ -30,6 +35,12 @@ function App() {
         </Routes>
       </AudioSystem>
     </BrowserRouter>
+  );
+  */
+
+  // hide after testing
+  return (
+    <RigTest />
   );
 }
 

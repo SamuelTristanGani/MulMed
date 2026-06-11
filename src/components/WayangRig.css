@@ -1,0 +1,80 @@
+/* to fine tune body part positioning for each wayang */
+
+/*
+
+.left-upper {
+    transform-origin: top center;
+}
+
+.left-lower {
+    transform-origin: top center;
+}
+
+.right-upper {
+    transform-origin: top center;
+}
+
+.right-lower {
+    transform-origin: top center;
+}
+
+*/
+
+.body {
+  width: 100px;
+  height: 150px;
+  background: blue;
+
+  position: relative;
+  margin: 0 auto;
+  transform: translateY(40px);
+}
+
+.left-upper {
+  width: 20px;
+  height: 80px;
+  background: red;
+
+  position: absolute;
+  left: -10px;
+  top: 20px;
+
+  transform-origin: top center;
+}
+
+.left-lower {
+  width: 20px;
+  height: 60px;
+  background: green;
+
+  position: absolute;
+  left: 0;
+  top: 80px;
+
+  transform-origin: top center;
+}
+
+.right-upper {
+  width: 20px;
+  height: 80px;
+  background: red;
+
+  position: absolute;
+  right: -10px;
+  top: 20px;
+
+  transform-origin: top center;
+}
+
+.right-lower {
+  width: 20px;
+  height: 60px;
+  background: green;
+
+  position: absolute;
+  right: 0;
+  top: 80px;
+
+  transform-origin: top center;
+}
+
